@@ -192,7 +192,7 @@ required.
 
 ## Licence
 
-MIT - see `LICENSE`. Put your name in the copyright line before publishing.
+MIT - see `LICENSE`. 
 
 `NOTICE` records where the protocol knowledge came from and lists the vendor
 material that is deliberately **not** part of this tree.
