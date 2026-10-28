@@ -1,0 +1,54 @@
+# Provenance and third-party material
+
+## What this project is
+
+A CUPS driver for the Primera LX900e colour label printer: a raster filter, a
+PPD generator, a backend wrapper, and a set of maintenance tools. All of it was
+written for this project.
+
+The printer has no page description language and its wire format is
+undocumented, so the protocol was recovered by observing the output of the
+vendor's own macOS driver and confirming each conclusion on a physical printer.
+
+## What is not distributed here
+
+The following were used during development and are **not** part of this
+repository or its releases:
+
+* the vendor's macOS driver package (`.dmg`, `.pkg`, application bundles,
+  `rastertoCL900`, `ColorLabel900Util`, the Lexmark `prdrhpec` framework, the
+  colour lookup tables and ICC profiles);
+* the sample print streams that ship with that package (`TestOffsets.prn`,
+  `PT_Cl900.prn`), which are output of the vendor's software;
+* Ghidra project files and decompiled listings of the vendor binaries.
+
+Those are the property of their respective owners. If you need them, obtain
+them from Primera. The documentation refers to them by name when explaining how
+a conclusion was reached, so that the reasoning can be checked by anyone who
+has the vendor package.
+
+## What this project emits
+
+The wire format description in `docs/PROTOCOL.md` is this project's own
+analysis. The encoder in `driver/rastertoLX900.c` and the PPD generator were
+written from that description, not copied from anything.
+
+Where the driver had to reproduce a vendor *value* rather than vendor code -
+a fixed table of drop-counter full scales, a set of standard label
+dimensions - those are facts about the hardware, and they are noted as such in
+the source.
+
+## Third-party software
+
+* **CUPS** - the driver links against `libcups` for the raster API and is built
+  against its headers. Not vendored; install your distribution's package.
+* **libusb-1.0** - `lx900-send` and the backend wrapper link against it. Not
+  vendored.
+
+## Trademarks
+
+Primera and LX900e are trademarks of Primera Technology, Inc. This project is
+not affiliated with, endorsed by, or supported by Primera Technology. It is an
+independent driver written to make the hardware usable on Linux.
+
+The model name is used only to describe what the software talks to.

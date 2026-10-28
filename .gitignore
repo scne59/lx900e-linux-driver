@@ -1,0 +1,16 @@
+# build output
+build/
+driver/rastertoLX900
+driver/lx900
+
+# intermediate files from the filters and tools
+*.o
+*.rast
+*.lx9
+*.prn
+
+# generated PPD: committed for release, but regenerate with `make -C driver`
+# driver/CL900-linux.ppd
+
+# editor backups
+*~

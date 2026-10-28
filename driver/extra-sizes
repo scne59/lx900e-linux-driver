@@ -1,0 +1,12 @@
+# Extra label sizes, one per line: WIDTHxHEIGHT in mm or inches.
+#
+# Each one is added to the PPD by name, so it can be picked from the print
+# dialog instead of typed into the custom fields - which matters, because some
+# dialogs format a custom size with the locale decimal comma and CUPS then
+# cannot parse it (see docs/INSTALL.md).
+#
+# Examples:
+#   100x76mm
+#   50x80mm
+#   62x100mm
+#   4x6
