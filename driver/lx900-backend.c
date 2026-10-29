@@ -461,8 +461,11 @@ int main(int argc, char **argv)
     if (getenv("LX900_BACKEND_PROBE"))
         return 0;
 
-    snprintf(usb, sizeof(usb), "%s/backend/usb",
-             sbin && *sbin ? sbin : "/usr/lib/cups");
+    if (snprintf(usb, sizeof(usb), "%s/backend/usb",
+                 sbin && *sbin ? sbin : "/usr/lib/cups") >= (int)sizeof(usb)) {
+        fprintf(stderr, "ERROR: CUPS_SERVERBIN is too long\n");
+        return 1;
+    }
     argv[0] = usb;
     execv(usb, argv);
 

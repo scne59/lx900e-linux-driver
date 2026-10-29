@@ -40,6 +40,10 @@
 
 #define BAND_ROWS       240
 
+/* 18 inches at 1200 dpi: the tallest page the PPD offers.  A raster taller
+ * than this would only grow the per-page copy buffer without being printable. */
+#define MAX_HEIGHT_DOTS 21600
+
 /*
  * The print head covers 8.25 inches, which is 9900 dots at 1200 dpi.  The
  * vendor's widest sample is 9896 dots, and the PPD offers pages up to 8x8
@@ -1094,7 +1098,16 @@ int main(int argc, char *argv[])
                     hdr.cupsColorSpace, hdr.cupsBitsPerColor,
                     hdr.cupsColorOrder, hdr.cupsBytesPerLine);
 
-        line = malloc(hdr.cupsBytesPerLine ? hdr.cupsBytesPerLine : 1);
+        if (hdr.cupsHeight > MAX_HEIGHT_DOTS)
+            fatal("ERROR: page is %u rows at %u dpi (%.1f in).  The printer "
+                  "tops out at %d rows (18 in).",
+                  hdr.cupsHeight, hdr.HWResolution[1],
+                  (double)hdr.cupsHeight /
+                      (hdr.HWResolution[1] ? hdr.HWResolution[1] : 1),
+                  MAX_HEIGHT_DOTS);
+
+        /* calloc, so a short read can never publish stale heap bytes */
+        line = calloc(1, hdr.cupsBytesPerLine ? hdr.cupsBytesPerLine : 1);
         if (!line)
             fatal("ERROR: out of memory");
 
@@ -1144,7 +1157,8 @@ int main(int argc, char *argv[])
                 n = BAND_ROWS;
 
             for (r = 0; r < n; r++) {
-                if (cupsRasterReadPixels(ras, line, hdr.cupsBytesPerLine) == 0)
+                if (cupsRasterReadPixels(ras, line, hdr.cupsBytesPerLine) <
+                    hdr.cupsBytesPerLine)
                     fatal("ERROR: short raster read at line %u", y + r);
                 for (i = 0; i < (int)nactive; i++)
                     pl[plane_ids[i]].rows = n;
@@ -1216,7 +1230,8 @@ int main(int argc, char *argv[])
 
         /* consume the source rows that fall past the end of the page */
         for (skip = usable; skip < hdr.cupsHeight; skip++) {
-            if (cupsRasterReadPixels(ras, line, hdr.cupsBytesPerLine) == 0)
+            if (cupsRasterReadPixels(ras, line, hdr.cupsBytesPerLine) <
+                hdr.cupsBytesPerLine)
                 fatal("ERROR: short raster read at line %u", skip);
         }
 

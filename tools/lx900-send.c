@@ -314,17 +314,17 @@ static int query_status(libusb_device_handle *h)
     }
     if (total >= 0x30)
         printf("  type=0x%02x error=0x%02x\n", acc[OFF_STATE], acc[OFF_ERROR]);
-    if (total >= 0x7c)
+    if (total >= 0x7c) {
         print_levels(acc);
-    if (total >= 0x7c)
         printf("  paper=%s%s\n", acc[OFF_PAPER] ? "loaded" : "NONE",
                (acc[OFF_ERROR] & 1) ? "  (loop sensor: out of stock)" : "");
+    }
     if (total >= 0x60) {
-        double w = (double)(acc[0x5c] | acc[0x5d] << 8) / 100.0;
-        double h = (double)(acc[0x5e] | acc[0x5f] << 8) / 100.0;
+        double page_w = (double)(acc[0x5c] | acc[0x5d] << 8) / 100.0;
+        double page_h = (double)(acc[0x5e] | acc[0x5f] << 8) / 100.0;
 
         printf("  present=%u sensor=%u  last page %.2f x %.2f in  job=%u\n",
-               acc[0x58], acc[0x5a], w, h, acc[0x03]);
+               acc[0x58], acc[0x5a], page_w, page_h, acc[0x03]);
     }
     if (total == 0)
         fprintf(stderr,
