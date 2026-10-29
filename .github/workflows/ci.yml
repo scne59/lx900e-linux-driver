@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libcups2-dev libusb-1.0-0-dev
+          sudo apt-get install -y cups-ppdc || true
+
+      - name: Build and test
+        run: make test
+
+      - name: Sanitizers
+        run: |
+          cc -O1 -g -fsanitize=address,undefined -o build/rastertoLX900-asan driver/rastertoLX900.c -lcups
+          LX900_FILTER="$PWD/build/rastertoLX900-asan" python3 tests/test_encoder.py
+
+      - name: shellcheck
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y shellcheck
+          shellcheck -S warning tools/*.sh install.sh tests/*.sh

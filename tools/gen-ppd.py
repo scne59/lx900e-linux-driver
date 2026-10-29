@@ -148,6 +148,8 @@ def size_from_token(token):
     else:
         w_pt, h_pt = w * 72.0, h * 72.0
         label = "%g x %g in" % (w, h)
+    # keep the emitted numbers stable and short
+    w_pt, h_pt = round(w_pt, 2), round(h_pt, 2)
     if not (54.0 <= w_pt <= 612.0 and 54.0 <= h_pt <= 1296.0):
         return None
     return t, w_pt, h_pt, label
@@ -190,6 +192,10 @@ def main():
 
     if DEFAULT_PAGE not in have:
         sys.exit("default page %s is missing from the size table" % DEFAULT_PAGE)
+
+    # CUPS falls back to the *first* PageSize entry when a job asks for a custom
+    # size it cannot parse, so the default choice has to come first.
+    sizes.sort(key=lambda s: 0 if s[0] == DEFAULT_PAGE else 1)
 
     out = [HEADER]
 

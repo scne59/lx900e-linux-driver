@@ -183,6 +183,19 @@ a dried head still reports `ok`, which is what a dead magenta channel looks
 like. If a whole channel is missing from a print, see "A dead channel looks like
 a colour bug" above.
 
+## Tests
+
+```
+make test
+```
+
+Builds the driver and tools, then runs every suite that does not need a
+printer: the encoder (decoding its own output with an independent
+implementation of the format), the PPD generator, unit tests for the status
+helpers, and checks on the shell tools. CI runs the same thing plus
+AddressSanitizer/UBSan. What needs hardware is in
+[docs/TEST-PLAN.md](docs/TEST-PLAN.md). Details in [tests/README.md](tests/README.md).
+
 ## Requirements
 
 `build-essential`, `libcups2-dev`, optionally `libusb-1.0-0-dev` (needed by

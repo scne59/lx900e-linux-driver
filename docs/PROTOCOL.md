@@ -228,9 +228,11 @@ control & 0x80  ->  repeat mode
     skip  = (control >> 5) & 3
     count = (control & 0x1f) + 1
     copy `skip` bytes from the seed
-    then `count` times: read (run, value)
+    then read (run, value) pairs until `count` bytes have been produced
         run == 0  -> emit one literal `value`
         run != 0  -> emit `value` (run + 1) times
+    `count` is a byte count, not a pair count: one pair can cover up to 256
+    bytes, so a long run of one value costs a pair per 256 bytes.
 
 control & 0x80 == 0  ->  literal mode
     skip  = (control >> 3) & 0xf

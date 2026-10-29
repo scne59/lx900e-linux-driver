@@ -14,3 +14,7 @@ driver/lx900
 
 # editor backups
 *~
+
+# python bytecode from the syntax checks
+__pycache__/
+*.pyc
