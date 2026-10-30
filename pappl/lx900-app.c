@@ -830,6 +830,30 @@ static const char *autoadd_cb(const char *device_info, const char *device_uri,
     return NULL;
 }
 
+#ifndef HAVE_PAPPL_CREATE_PRINTERS
+/*
+ * PAPPL 1.3 has no papplSystemCreatePrinters().  Enumerate USB printers and
+ * create one queue for the first LX900e we find; that is what the newer
+ * helper does for a single-printer application anyway.
+ */
+static bool create_printer_cb(const char *device_info, const char *device_uri,
+                              const char *device_id, void *data)
+{
+    pappl_system_t *system = data;
+
+    if (autoadd_cb(device_info, device_uri, device_id, NULL) == NULL)
+        return false;
+    if (papplSystemFindPrinter(system, "/ipp/print/LX900e", 0, NULL) != NULL)
+        return false;
+    if (papplPrinterCreate(system, 0, "LX900e", DRIVER_NAME, device_id,
+                           device_uri) == NULL)
+        papplLog(system, PAPPL_LOGLEVEL_WARN,
+                 "cannot create a printer for '%s': %s", device_uri,
+                 strerror(errno));
+    return false;
+}
+#endif
+
 /* ------------------------------------------------------------------ */
 /* main                                                                */
 /* ------------------------------------------------------------------ */
@@ -1178,10 +1202,15 @@ int main(int argc, char **argv)
             return 1;
         }
     } else if (!state_loaded) {
+#ifdef HAVE_PAPPL_CREATE_PRINTERS
         papplSystemCreatePrinters(system,
                                   PAPPL_DEVTYPE_USB | PAPPL_DEVTYPE_SOCKET |
                                   PAPPL_DEVTYPE_DNS_SD,
                                   NULL, NULL);
+#else
+        papplDeviceList(PAPPL_DEVTYPE_USB, create_printer_cb, system,
+                        device_error_cb, NULL);
+#endif
     }
 
     fprintf(stderr,

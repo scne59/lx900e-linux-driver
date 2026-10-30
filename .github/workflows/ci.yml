@@ -13,10 +13,12 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config \
+          sudo apt-get install -y build-essential pkg-config python3 \
             libcups2-dev libusb-1.0-0-dev cups-ipp-utils \
-            libpappl-dev ghostscript cups-ppdc || true
-          # PAPPL is not in every Ubuntu pocket; the build skips it cleanly.
+            ghostscript cups-ppdc
+          # PAPPL is not in every Ubuntu pocket; without it the application
+          # is skipped, with it (1.3 or newer) the integration test runs.
+          sudo apt-get install -y libpappl-dev || true
           sudo apt-get install -y shellcheck || true
 
       - name: Build and test

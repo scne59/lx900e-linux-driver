@@ -13,6 +13,9 @@ CUPS_CFLAGS    := $(shell $(PKG_CONFIG) --cflags cups 2>/dev/null)
 CUPS_LIBS      := $(shell $(PKG_CONFIG) --libs cups 2>/dev/null)
 PAPPL_CFLAGS   := $(shell $(PKG_CONFIG) --cflags pappl 2>/dev/null)
 PAPPL_LIBS     := $(shell $(PKG_CONFIG) --libs pappl 2>/dev/null)
+# papplSystemCreatePrinters() arrived in PAPPL 1.4.  On older versions the
+# application enumerates USB devices itself.
+PAPPL_14       := $(shell $(PKG_CONFIG) --atleast-version=1.4 pappl 2>/dev/null && echo yes)
 MANDIR         ?= $(PREFIX)/share/man
 SYSTEMD_UNIT_DIR ?= $(PREFIX)/lib/systemd/system
 APPDATA_DIR    ?= $(PREFIX)/share/lx900e-app
@@ -22,6 +25,9 @@ APP            := $(BUILD_DIR)/lx900e-app
 SERVICE        := $(BUILD_DIR)/lx900e-app.service
 
 CPPFLAGS       += -Iinclude -D_GNU_SOURCE -DLX900_APP_VERSION=\"$(VERSION)\"
+ifeq ($(PAPPL_14),yes)
+CPPFLAGS       += -DHAVE_PAPPL_CREATE_PRINTERS
+endif
 CFLAGS         ?= -O2 -g
 CFLAGS         += -std=c11 -Wall -Wextra -Wpedantic -Wshadow -Wformat=2 \
                   -Wstrict-prototypes -Wmissing-prototypes -Wpointer-arith

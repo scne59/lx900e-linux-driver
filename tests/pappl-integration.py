@@ -194,8 +194,10 @@ def check_startup_banner():
 
 
 def check_web():
+    # PAPPL 1.3.1's /addprinter page asserts in Avahi when no DNS-SD daemon
+    # is running, so it is not exercised here; the printer pages are ours.
     for path in ("/", "/LX900e/", "/LX900e/media", "/LX900e/printing",
-                 "/LX900e/supplies", "/addprinter", "/config"):
+                 "/LX900e/supplies", "/config"):
         with urllib.request.urlopen(
                 "http://127.0.0.1:%d%s" % (PORT, path), timeout=5) as r:
             assert r.status == 200, (path, r.status)
