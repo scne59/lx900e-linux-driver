@@ -35,7 +35,7 @@ jobs:
              python3 tests/test_encoder.py
           if pkg-config --exists pappl; then
             cc -O1 -g -fsanitize=address,undefined -D_GNU_SOURCE \
-               -DLX900_APP_VERSION='"ci"' -DHAVE_LIBUSB -Iinclude \
+               -DLX900_APP_VERSION=\"ci\" -DHAVE_LIBUSB -Iinclude \
                $(pkg-config --cflags pappl cups libusb-1.0) \
                -o build/lx900e-app-asan pappl/lx900-app.c \
                src/lx900_encoder.c src/lx900_status.c \
