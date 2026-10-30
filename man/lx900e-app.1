@@ -1,0 +1,137 @@
+.\" SPDX-License-Identifier: MIT
+.\" Copyright (c) 2026 Jochen Schneider <j@lz44.de>
+.TH lx900e-app 1 "2026-10-30" "lx900e-cups 1.0.0" "User Commands"
+.SH NAME
+lx900e-app \- PAPPL printer application for the Primera LX900e label printer
+.SH SYNOPSIS
+.B lx900e-app
+.RB [ \-\-device " uri" ]
+.RB [ \-\-printer " name" ]
+.RB [ \-\-port " port" ]
+.RB [ \-\-spool " directory" ]
+.RB [ \-\-log " file" ]
+.RB [ \-\-state " file" ]
+.RB [ \-\-no-state ]
+.RB [ \-\-debug ]
+.RB [ \-\-check-device ]
+.RB [ \-\-no-tls ]
+.SH DESCRIPTION
+.B lx900e-app
+is a PAPPL-based IPP Everywhere printer application for the Primera LX900e
+colour label printer.
+It exposes the printer without a PPD, so it can be used with CUPS 3,
+AirPrint, Mopria, and other IPP Everywhere clients.
+.PP
+PWG raster jobs are accepted directly.
+PDF and PostScript jobs are converted to CUPS raster with Ghostscript and
+then passed to the same encoder as the CUPS 2 filter, so a page prints the
+same way through either path.
+.PP
+The application advertises the 1200 dpi native resolution and the page sizes
+from the PPD.  The common sizes are exposed as virtual roll sources, because
+AirPrint and Mopria build their paper-size menu from the ready media of each
+source; there is still only one physical roll.  The largest size is advertised
+without a ready source because PAPPL allows at most 16 sources.
+Ink levels and the media sensor are read from the printer's status block over
+USB and reported as IPP supplies and state reasons.
+.SH OPTIONS
+.TP
+.BI \-\-device " uri"
+Create one printer for the given device URI, for example
+.B usb://Primera/Color_Label_900?serial=00000001
+or
+.BR file:/tmp/capture.prn .
+.TP
+.BI \-\-printer " name"
+Printer name for
+.BR \-\-device .
+Defaults to
+.BR LX900e .
+.TP
+.BI \-\-port " port"
+IPP port, default 8000.
+.TP
+.BI \-\-spool " directory"
+Spool directory.
+The default is
+.B /var/spool/lx900e-app
+for root and
+.B $XDG_STATE_HOME/lx900e-app
+for other users.
+.TP
+.BI \-\-log " file"
+Log file, default standard error.
+.TP
+.BI \-\-state " file"
+State file, default
+.B SPOOL/state.
+.TP
+.B \-\-no-state
+Do not load or save printer state.
+.TP
+.B \-\-debug
+Enable PAPPL debug logging.
+.TP
+.B \-\-check-device
+Open the
+.B \-\-device
+URI, report success, and exit.
+.TP
+.B \-\-no-tls
+Do not advertise or require IPPS/TLS.
+.TP
+.B \-\-help
+Show a usage summary.
+.SH PRINT OPTIONS
+.TP
+.B lx900-ink-cartridge
+Which cartridges are fitted:
+.BR Color " (CMY only),"
+.BR Black " (black only) or"
+.BR ColorBlack " (both, the default)."
+This is the same option as the CUPS 2 PPD's
+.BR InkCartridge .
+.SH FILES
+.TP
+.B /etc/lx900.conf
+Registration offsets, shared with the CUPS 2 filter:
+.PP
+.nf
+    # dots at 1200 dpi; left may be negative
+    left=0
+    top=4
+.fi
+.PP
+The environment variables
+.B LX900_LEFT_OFFSET
+and
+.B LX900_TOP_OFFSET
+override the file.
+.SH EXAMPLES
+Run in the foreground against the printer and open the web interface:
+.PP
+.nf
+    lx900e-app --device 'usb://Primera/Color_Label_900?serial=00000001' \\
+        --printer LX900e --port 8000 \\
+        --spool "$HOME/.local/state/lx900e-app"
+.fi
+.PP
+Print a PDF through the application:
+.PP
+.nf
+    ipptool -tv ipp://localhost:8000/ipp/print/LX900e print-job.test
+.fi
+.SH NOTES
+The status query opens the USB device for a moment.
+It is only made while the printer is idle, at most every ten seconds, and
+never for
+.B file:
+or
+.B socket:
+devices.
+.SH SEE ALSO
+.BR lp (1),
+.BR lpadmin (8),
+.BR lx900-send (1)
+.SH AUTHOR
+Jochen Schneider.

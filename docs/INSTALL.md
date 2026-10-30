@@ -50,6 +50,39 @@ It wants the file owned by root and not group-writable. A PPD can point at an
 absolute path outside `/usr/lib/cups/filter`, but the ownership check still
 applies, so there is no way around the install step.
 
+## CUPS 3 and the printer application
+
+CUPS 3 does not use PPDs, so the classic queue above is a CUPS 2 path.  For
+CUPS 3, AirPrint, Mopria or any other IPP Everywhere client, build and run the
+PAPPL application instead:
+
+```
+sudo apt install libpappl-dev ghostscript
+make pappl
+sudo make install-pappl
+lx900e-app --device 'usb://Primera/Color_Label_900?serial=00000001' \
+    --printer LX900e --port 8000 --spool "$HOME/.local/state/lx900e-app"
+```
+
+Add `ipp://localhost:8000/ipp/print/LX900e` as a network printer in CUPS 3, or
+open `http://localhost:8000/` to use the web interface.  Without `--device` the
+application discovers USB printers and lets you add one through the web
+interface.
+
+Both front ends use the same encoder and the same `/etc/lx900.conf`
+registration offsets.  The `lx900-ink-cartridge` print option corresponds to
+the PPD's `InkCartridge`.
+
+To run it as a service:
+
+```
+sudo systemctl daemon-reload
+sudo systemctl enable --now lx900e-app
+```
+
+and edit the unit if you want to bind one specific printer (the file has an
+example).
+
 ## Pick the media size
 
 The queue defaults to `4x3`. Set what you actually have loaded:

@@ -8,11 +8,15 @@ material for the analysis and is not redistributed - see `NOTICE`.
 
 Status: **it prints.** A CUPS raster page goes through
 `rastertoLX900` and comes out of the printer, which feeds to the present
-position and stays ready for the next job.
+position and stays ready for the next job. The same encoder is also packaged
+as a PAPPL printer application for CUPS 3 and IPP Everywhere clients.
 
 ## What it does
 
 * Classic CUPS 2.4 driver: one PPD plus one raster filter.
+* CUPS 3 / IPP Everywhere printer application (`lx900e-app`): no PPD, PWG
+  raster in, PDF/PostScript through Ghostscript, supplies and media state from
+  the printer's status block. Both front ends share `src/lx900_encoder.c`.
 * 1200 dpi, four ink channels (C, M, Y, K), no overcoat. The PPD's
   `InkCartridge` option picks which ink is used: `Color` (CMY), `Black`, or
   `Color + Black` (the default, both).
@@ -64,6 +68,20 @@ lpadmin -p LX900e -o PageSize=4x6      # match your loaded stock
 lp -d LX900e label.pdf
 ```
 
+For CUPS 3, or to use the printer without a PPD:
+
+```
+sudo apt install libpappl-dev ghostscript
+make pappl
+sudo make install-pappl
+lx900e-app --device 'usb://Primera/Color_Label_900?serial=00000001' \
+    --printer LX900e --port 8000 --spool "$HOME/.local/state/lx900e-app"
+```
+
+Then add `ipp://localhost:8000/ipp/print/LX900e` as a network printer in CUPS 3
+or any IPP Everywhere client. The web interface is at
+`http://localhost:8000/`.
+
 Details, including why `sudo` is unavoidable, are in [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Documentation
@@ -78,10 +96,19 @@ Details, including why `sudo` is unavoidable, are in [docs/INSTALL.md](docs/INST
 ## Layout
 
 ```
-driver/rastertoLX900.c    the filter (CUPS raster in, printer stream out)
+include/lx900.h           encoder API shared by the filter and the application
+include/lx900_status.h    status/supplies API
+src/lx900_encoder.c       CUPS raster -> printer stream (framing, codec, dither)
+src/lx900_status.c        status block over libusb, for the application
+driver/rastertoLX900.c    the CUPS 2 filter: stdin raster -> the encoder
 driver/CL900-linux.ppd    the PPD
 driver/Makefile
 driver/lx900-backend.c    CUPS backend wrapper: ink levels, then the usb backend
+pappl/lx900-app.c         PAPPL printer application for CUPS 3
+pappl/lx900.css           web interface stylesheet
+pappl/lx900e-app.service.in  systemd unit
+man/lx900e-app.1          manual page
+tests/                    printer-free test suites
 tools/lx900-send.c        raw USB sender / status probe, for bring-up
 tools/lx900-doctor.sh     walk the bring-up ladder in docs/TEST-PLAN.md
 tools/lx900-purge.sh      purge / prime a channel by printing a flood
@@ -189,19 +216,22 @@ a colour bug" above.
 make test
 ```
 
-Builds the driver and tools, then runs every suite that does not need a
-printer: the encoder (decoding its own output with an independent
-implementation of the format), the PPD generator, unit tests for the status
-helpers, and checks on the shell tools. CI runs the same thing plus
-AddressSanitizer/UBSan. What needs hardware is in
+Builds the driver, tools and printer application, then runs every suite that
+does not need a printer: the encoder (decoding its own output with an
+independent implementation of the format), the PPD generator, unit tests for
+the status helpers, checks on the shell tools, and an end-to-end test that
+starts `lx900e-app` on a `file:` device and prints PWG raster and PDF jobs
+through it. CI runs the same thing plus AddressSanitizer/UBSan. What needs hardware is in
 [docs/TEST-PLAN.md](docs/TEST-PLAN.md). Details in [tests/README.md](tests/README.md).
 
 ## Requirements
 
 `build-essential`, `libcups2-dev`, optionally `libusb-1.0-0-dev` (needed by
-`lx900-send` and by the ink-level backend; without it the queue prints but
-reports no levels). The printer is a 1200 dpi USB device; nothing else is
-required.
+`lx900-send`, the ink-level backend and the application's supply reporting;
+without it everything still prints but reports no levels). For the printer
+application: `libpappl-dev` (PAPPL 1.4 or newer), `ghostscript` and
+`ipptool` (the last two are only needed for PDF jobs and the integration
+test). The printer is a 1200 dpi USB device; nothing else is required.
 
 ## Licence
 

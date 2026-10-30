@@ -13,6 +13,7 @@ printer. Nothing here needs root, a CUPS daemon or a printer.
 | `test_ppd.py` | `tools/gen-ppd.py`: required keywords, page geometry, the default-page-first ordering, extra sizes, and `cupstestppd` if it is installed. |
 | `unit_status.c` | White-box tests for the status helpers in `driver/lx900-backend.c`: media detection, the config reader, ink percentages and the marker attributes. |
 | `test_tools.sh` | The shell tools: syntax, usage text, and that bad arguments are rejected. |
+| `pappl-integration.py` | The CUPS 3 printer application, end to end: starts it on a `file:` device, submits PWG raster and PDF jobs through IPP with `ipptool`, and decodes the captured printer stream. Also checks the web pages, the stylesheet, media attributes, the vendor ink option and copies. Skipped without PAPPL, Ghostscript or `ipptool`. |
 
 `stream.py` is an implementation of the stream format written from
 `docs/PROTOCOL.md`, not from the C code. The encoder tests decode the filter's

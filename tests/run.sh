@@ -75,6 +75,18 @@ fi
 step "shell tools"
 run tools sh tests/test_tools.sh
 
+step "printer application"
+if pkg-config --exists pappl 2>/dev/null; then
+    if make pappl >/dev/null 2>&1; then
+        run pappl python3 tests/pappl-integration.py $VERBOSE
+    else
+        echo "could not build the printer application"
+        fail=1
+    fi
+else
+    echo "skipped (PAPPL is not installed)"
+fi
+
 printf '\n'
 if [ "$fail" = 0 ]; then
     echo "all test suites passed"

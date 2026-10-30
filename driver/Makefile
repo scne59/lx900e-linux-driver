@@ -1,13 +1,17 @@
 CC       ?= cc
 CFLAGS   ?= -O2 -Wall -Wextra
+CPPFLAGS += -I../include
 PREFIX   ?= /usr
 FILTERDIR ?= $(PREFIX)/lib/cups/filter
 PPDDIR    ?= $(PREFIX)/share/cups/model
 
 all: rastertoLX900 lx900 CL900-linux.ppd
 
-rastertoLX900: rastertoLX900.c
-	$(CC) $(CFLAGS) -o $@ $< -lcups
+# The encoder is shared with the CUPS 3 printer application.
+CORE = ../src/lx900_encoder.c
+
+rastertoLX900: rastertoLX900.c $(CORE) ../include/lx900.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ rastertoLX900.c $(CORE) -lcups
 
 # CUPS backend wrapper that publishes ink levels, then execs the usb backend.
 # Optional: without libusb headers the queue simply keeps using usb directly.

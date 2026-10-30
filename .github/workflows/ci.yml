@@ -6,26 +6,42 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libcups2-dev libusb-1.0-0-dev
-          sudo apt-get install -y cups-ppdc || true
+          sudo apt-get install -y build-essential pkg-config \
+            libcups2-dev libusb-1.0-0-dev cups-ipp-utils \
+            libpappl-dev ghostscript cups-ppdc || true
+          # PAPPL is not in every Ubuntu pocket; the build skips it cleanly.
+          sudo apt-get install -y shellcheck || true
 
       - name: Build and test
+        env:
+          LC_ALL: C
         run: make test
 
       - name: Sanitizers
         run: |
-          cc -O1 -g -fsanitize=address,undefined -o build/rastertoLX900-asan driver/rastertoLX900.c -lcups
-          LX900_FILTER="$PWD/build/rastertoLX900-asan" python3 tests/test_encoder.py
+          cc -O1 -g -fsanitize=address,undefined \
+             -o build/rastertoLX900-asan driver/rastertoLX900.c \
+             src/lx900_encoder.c -Iinclude -lcups
+          LX900_FILTER="$PWD/build/rastertoLX900-asan" \
+             python3 tests/test_encoder.py
+          if pkg-config --exists pappl; then
+            cc -O1 -g -fsanitize=address,undefined -D_GNU_SOURCE \
+               -DLX900_APP_VERSION='"ci"' -DHAVE_LIBUSB -Iinclude \
+               $(pkg-config --cflags pappl cups libusb-1.0) \
+               -o build/lx900e-app-asan pappl/lx900-app.c \
+               src/lx900_encoder.c src/lx900_status.c \
+               $(pkg-config --libs pappl cups libusb-1.0) -lm
+            LX900_APP="$PWD/build/lx900e-app-asan" \
+               python3 tests/pappl-integration.py
+          fi
 
       - name: shellcheck
         continue-on-error: true
-        run: |
-          sudo apt-get install -y shellcheck
-          shellcheck -S warning tools/*.sh install.sh tests/*.sh
+        run: shellcheck -S warning tools/*.sh install.sh tests/*.sh

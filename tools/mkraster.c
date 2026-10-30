@@ -1,7 +1,11 @@
 /*
  * mkraster - generate a CUPS RGB raster test page on stdout.
  *
- *   mkraster [W H DPI] [blank | fill R G B | gray V | rect X0 Y0 X1 Y1 [R G B]]
+ *   mkraster [--pwg] [W H DPI] [blank | fill R G B | gray V |
+ *                                     rect X0 Y0 X1 Y1 [R G B]]
+ *
+ * --pwg writes PWG raster (what an IPP Everywhere client sends) instead of
+ * CUPS raster.  The default pattern is the same either way.
  *
  * The default is a mixed test pattern.  "blank" is white, "fill" a solid RGB
  * colour and "gray" a flat grey level; the tests use those to check the filter
@@ -14,34 +18,42 @@
 
 int main(int argc, char **argv)
 {
-    unsigned w = argc > 1 ? (unsigned)atoi(argv[1]) : 2400;
-    unsigned h = argc > 2 ? (unsigned)atoi(argv[2]) : 1800;
-    unsigned dpi = argc > 3 ? (unsigned)atoi(argv[3]) : 1200;
+    int pwg = 0;
+    int a = 1;
+
+    if (argc > 1 && !strcmp(argv[1], "--pwg")) {
+        pwg = 1;
+        a = 2;
+    }
+
+    unsigned w = argc > a ? (unsigned)atoi(argv[a]) : 2400;
+    unsigned h = argc > a + 1 ? (unsigned)atoi(argv[a + 1]) : 1800;
+    unsigned dpi = argc > a + 2 ? (unsigned)atoi(argv[a + 2]) : 1200;
     int blank = 0, fill = 0, gray = 0, rect = 0;
     unsigned fr = 0, fg = 0, fb = 0, grey = 128;
     unsigned rx0 = 0, ry0 = 0, rx1 = 0, ry1 = 0;
 
-    if (argc > 4) {
-        if (!strcmp(argv[4], "blank"))
+    if (argc > a + 3) {
+        if (!strcmp(argv[a + 3], "blank"))
             blank = 1;
-        else if (!strcmp(argv[4], "fill") && argc > 7) {
+        else if (!strcmp(argv[a + 3], "fill") && argc > a + 6) {
             fill = 1;
-            fr = (unsigned)strtoul(argv[5], NULL, 0) & 0xff;
-            fg = (unsigned)strtoul(argv[6], NULL, 0) & 0xff;
-            fb = (unsigned)strtoul(argv[7], NULL, 0) & 0xff;
-        } else if (!strcmp(argv[4], "gray") && argc > 5) {
+            fr = (unsigned)strtoul(argv[a + 4], NULL, 0) & 0xff;
+            fg = (unsigned)strtoul(argv[a + 5], NULL, 0) & 0xff;
+            fb = (unsigned)strtoul(argv[a + 6], NULL, 0) & 0xff;
+        } else if (!strcmp(argv[a + 3], "gray") && argc > a + 4) {
             gray = 1;
-            grey = (unsigned)strtoul(argv[5], NULL, 0) & 0xff;
-        } else if (!strcmp(argv[4], "rect") && argc > 8) {
+            grey = (unsigned)strtoul(argv[a + 4], NULL, 0) & 0xff;
+        } else if (!strcmp(argv[a + 3], "rect") && argc > a + 7) {
             rect = 1;
-            rx0 = (unsigned)strtoul(argv[5], NULL, 0);
-            ry0 = (unsigned)strtoul(argv[6], NULL, 0);
-            rx1 = (unsigned)strtoul(argv[7], NULL, 0);
-            ry1 = (unsigned)strtoul(argv[8], NULL, 0);
-            if (argc > 11) {
-                fr = (unsigned)strtoul(argv[9], NULL, 0) & 0xff;
-                fg = (unsigned)strtoul(argv[10], NULL, 0) & 0xff;
-                fb = (unsigned)strtoul(argv[11], NULL, 0) & 0xff;
+            rx0 = (unsigned)strtoul(argv[a + 4], NULL, 0);
+            ry0 = (unsigned)strtoul(argv[a + 5], NULL, 0);
+            rx1 = (unsigned)strtoul(argv[a + 6], NULL, 0);
+            ry1 = (unsigned)strtoul(argv[a + 7], NULL, 0);
+            if (argc > a + 10) {
+                fr = (unsigned)strtoul(argv[a + 8], NULL, 0) & 0xff;
+                fg = (unsigned)strtoul(argv[a + 9], NULL, 0) & 0xff;
+                fb = (unsigned)strtoul(argv[a + 10], NULL, 0) & 0xff;
             }
         }
     }
@@ -60,7 +72,7 @@ int main(int argc, char **argv)
     hdr.cupsHeight = h;
     hdr.cupsBitsPerColor = 8;
     hdr.cupsBitsPerPixel = 24;
-    hdr.cupsColorSpace = CUPS_CSPACE_RGB;
+    hdr.cupsColorSpace = pwg ? CUPS_CSPACE_SRGB : CUPS_CSPACE_RGB;
     hdr.cupsColorOrder = CUPS_ORDER_CHUNKED;
     hdr.cupsNumColors = 3;
     hdr.cupsBytesPerLine = w * 3;
@@ -70,7 +82,13 @@ int main(int argc, char **argv)
     hdr.cupsInteger[3] = 0;
     hdr.cupsInteger[4] = 0;
 
-    r = cupsRasterOpen(1, CUPS_RASTER_WRITE);
+    if (pwg) {
+        hdr.cupsPageSize[0] = (float)(w * 72.0 / (dpi ? dpi : 1));
+        hdr.cupsPageSize[1] = (float)(h * 72.0 / (dpi ? dpi : 1));
+        snprintf(hdr.cupsPageSizeName, sizeof(hdr.cupsPageSizeName), "custom");
+    }
+
+    r = cupsRasterOpen(1, pwg ? CUPS_RASTER_WRITE_PWG : CUPS_RASTER_WRITE);
     if (!r)
         return 1;
     if (!cupsRasterWriteHeader2(r, &hdr))

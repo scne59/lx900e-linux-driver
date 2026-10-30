@@ -1,0 +1,32 @@
+[Unit]
+Description=Primera LX900e printer application
+Documentation=man:lx900e-app(1)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lp
+Group=lp
+StateDirectory=lx900e-app
+WorkingDirectory=/var/lib/lx900e-app
+ExecStart=@BINDIR@/lx900e-app --port 8000 --spool /var/lib/lx900e-app
+Restart=on-failure
+RestartSec=2
+
+# To bind one specific printer, override ExecStart with:
+#   sudo systemctl edit lx900e-app
+#
+# [Service]
+# ExecStart=
+# ExecStart=@BINDIR@/lx900e-app \
+#     --device 'usb://Primera/Color_Label_900?serial=00000001' \
+#     --printer LX900e --port 8000 --spool /var/lib/lx900e-app
+#
+# If the printer is not accessible as user "lp", run
+#   lx900e-app --device 'usb://Primera/Color_Label_900?serial=00000001' \
+#              --check-device
+# and adjust the service user or the udev permissions.
+
+[Install]
+WantedBy=multi-user.target
