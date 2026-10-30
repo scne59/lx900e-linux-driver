@@ -120,6 +120,37 @@ def test_no_vendor_text():
 
 
 @test
+def test_app_media_table_matches_the_ppd():
+    """The printer application carries its own copy of the size table."""
+    app = os.path.join(ROOT, "pappl", "lx900-app.c")
+    if not os.path.exists(app):
+        print("skip (no printer application in this tree)")
+        return
+
+    # Import the generator so the comparison uses its table, not a copy.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("gen_ppd", GEN)
+    gen = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gen)
+
+    with open(app, encoding="utf-8") as f:
+        text = f.read()
+    block = text.split("static const media_size_t media_sizes[] = {", 1)[1]
+    block = block.split("};", 1)[0]
+    got = [(name, int(w), int(l)) for name, w, l in
+           re.findall(r'\{\s*"([^"]+)",\s*(\d+),\s*(\d+)\s*\}', block)]
+
+    want = [(name, round(w * 2540.0 / 72.0), round(h * 2540.0 / 72.0))
+            for name, w, h, _label in gen.SIZES]
+    if sorted(got) != sorted(want):
+        raise AssertionError("application media table differs from gen-ppd.py:\n"
+                             "  app: %s\n  ppd: %s" % (got, want))
+    if got[0][0] != gen.DEFAULT_PAGE:
+        raise AssertionError("application default size is %r, want %r"
+                             % (got[0][0], gen.DEFAULT_PAGE))
+
+
+@test
 def test_ppd_compiles():
     cupstestppd = None
     for path in ("/usr/bin/cupstestppd", "/usr/sbin/cupstestppd"):
