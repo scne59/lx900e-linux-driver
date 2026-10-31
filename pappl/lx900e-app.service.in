@@ -9,6 +9,9 @@ Type=simple
 User=lp
 Group=lp
 StateDirectory=lx900e-app
+# CUPS puts its self-signed TLS certificate under $HOME/.cups/ssl.  Without a
+# writable HOME, IPPS clients fail with "Server credentials not set".
+Environment=HOME=/var/lib/lx900e-app
 WorkingDirectory=/var/lib/lx900e-app
 # The device arguments are filled in by `make pappl` / `make install-pappl`
 # when a printer is connected.  With no printer the application discovers one when it starts.

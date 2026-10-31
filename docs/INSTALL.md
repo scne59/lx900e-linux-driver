@@ -575,3 +575,12 @@ lpadmin -p LX900e -v "usb://Primera/Color_Label_900?serial=00000001"
 **`/dev/usb/lp0` does not exist.** Not needed. `lx900-send -q` detaches the
 `usblp` kernel driver and it does not always come back; the CUPS `usb` backend
 uses libusb directly and does not care.
+
+**The log says `Unable to encrypt connection: Server credentials not set`.**
+A client tried IPPS/HTTPS, but CUPS could not create its self-signed
+certificate. CUPS writes it under `$HOME/.cups/ssl`, and the service user must
+be able to create that directory. The shipped unit sets
+`HOME=/var/lib/lx900e-app` (the systemd state directory) for exactly this
+reason; if you run the application by hand as a user without a writable home,
+either set `HOME` to a writable directory or pass `--no-tls` and use plain
+IPP.

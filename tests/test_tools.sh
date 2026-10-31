@@ -66,6 +66,9 @@ expect_fail "installer rejects an unknown option" ./install.sh --frobnicate
 
 # ---------------------------------------------------------------- unit generation
 
+grep -q '^Environment=HOME=' pappl/lx900e-app.service.in ||
+    bad "service unit does not give CUPS a writable HOME for its TLS certificate"
+
 # The device URI can contain & or |, which sed would treat specially.  The
 # generator uses index()/substr() so the URI survives unchanged.
 line=$(printf '@BINDIR@/lx900e-app@DEVICE_ARGS@ --port 8000\n' |
