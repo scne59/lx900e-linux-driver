@@ -40,7 +40,8 @@ jobs:
                -o build/lx900e-app-asan pappl/lx900-app.c \
                src/lx900_encoder.c src/lx900_status.c \
                $(pkg-config --libs pappl cups libusb-1.0) -lm
-            LX900_APP="$PWD/build/lx900e-app-asan" \
+            LSAN_OPTIONS="suppressions=$PWD/tests/lsan.supp" \
+               LX900_APP="$PWD/build/lx900e-app-asan" \
                python3 tests/pappl-integration.py
           fi
 
