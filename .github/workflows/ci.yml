@@ -49,18 +49,9 @@ jobs:
           # PAPPL leaks a USB config descriptor in papplDeviceList(); leak
           # detection is off here so the test sees the application's exit
           # status, not PAPPL's leak report.  The encoder run above keeps it on.
-          set +e
           ASAN_OPTIONS=detect_leaks=0 \
              LX900_APP="$PWD/build/lx900e-app-asan" \
-             python3 tests/pappl-integration.py -v > /tmp/app-test.log 2>&1
-          rc=$?
-          cat /tmp/app-test.log
-          if [ $rc -ne 0 ]; then
-            tail -40 /tmp/app-test.log | while IFS= read -r line; do
-              echo "::error::$line"
-            done
-          fi
-          exit $rc
+             python3 tests/pappl-integration.py -v
 
       - name: shellcheck
         continue-on-error: true

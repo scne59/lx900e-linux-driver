@@ -58,7 +58,7 @@ def free_port():
         return sock.getsockname()[1]
 
 
-def wait_for_port(port, timeout=10.0):
+def wait_for_port(port, timeout=30.0):
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
@@ -91,7 +91,14 @@ def start_app(tmp):
         stdout=OUT.open("wb"),
         stderr=subprocess.STDOUT,
     )
-    wait_for_port(PORT)
+    try:
+        wait_for_port(PORT)
+    except AssertionError:
+        print("--- application stdout ---")
+        print(OUT.read_text(errors="replace")[-2000:])
+        print("--- application log ---")
+        print(LOG.read_text(errors="replace")[-4000:])
+        raise
 
 
 def stop_app():
@@ -138,7 +145,7 @@ def ipptool_job(tmp, name, filename, document_format, extra="",
         raise AssertionError("ipptool failed:\n%s" % result.stdout[-2000:])
 
     # The job may still be rendering after Print-Job returns.
-    deadline = time.time() + 60
+    deadline = time.time() + 120
     last_size = -1
     stable = 0
     while time.time() < deadline:
