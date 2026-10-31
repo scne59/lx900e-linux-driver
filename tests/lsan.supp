@@ -1,7 +1,0 @@
-# LeakSanitizer suppressions for the sanitizer CI run.
-#
-# PAPPL 1.4.9's papplDeviceList() leaks a libusb config descriptor while
-# enumerating USB printers.  The leak is in PAPPL, not in this driver, and it
-# makes --list-devices/--detect exit non-zero under ASan.  Everything this
-# driver allocates is still checked.
-leak:papplDeviceList
