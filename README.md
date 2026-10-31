@@ -90,6 +90,17 @@ Then add `ipp://localhost:8000/ipp/print/LX900e` as a network printer in CUPS 3
 or any IPP Everywhere client. The web interface is at
 `http://localhost:8000/`.
 
+If another printer application already uses port 8000 (the Brother TD project
+does), install this one on a free port instead:
+
+```
+sudo make install-pappl PORT=8001
+```
+
+and use `ipp://localhost:8001/ipp/print/LX900e`. Two applications on the same
+port bind different address families and answer each other's IPP requests,
+which makes CUPS report the printer as unavailable.
+
 Details, including why `sudo` is unavoidable, are in [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Documentation

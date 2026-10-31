@@ -71,16 +71,16 @@ grep -q '^Environment=HOME=' pappl/lx900e-app.service.in ||
 
 # The device URI can contain & or |, which sed would treat specially.  The
 # generator uses index()/substr() so the URI survives unchanged.
-line=$(printf '@BINDIR@/lx900e-app@DEVICE_ARGS@ --port 8000\n' |
-    awk -v bindir=/usr/bin \
+line=$(printf '@BINDIR@/lx900e-app@DEVICE_ARGS@ --port @PORT@\n' |
+    awk -v bindir=/usr/bin -v port=8001 \
         -v args=" --device 'usb://Primera/Color_Label_900?serial=a&b'" \
         -f tools/gen-service.awk)
-if [ "$line" != "/usr/bin/lx900e-app --device 'usb://Primera/Color_Label_900?serial=a&b' --port 8000" ]; then
+if [ "$line" != "/usr/bin/lx900e-app --device 'usb://Primera/Color_Label_900?serial=a&b' --port 8001" ]; then
     bad "service generator (got \"$line\")"
 fi
 
-line=$(printf '@BINDIR@/lx900e-app@DEVICE_ARGS@ --port 8000\n' |
-    awk -v bindir=/usr/bin -v args="" -f tools/gen-service.awk)
+line=$(printf '@BINDIR@/lx900e-app@DEVICE_ARGS@ --port @PORT@\n' |
+    awk -v bindir=/usr/bin -v port=8000 -v args="" -f tools/gen-service.awk)
 if [ "$line" != "/usr/bin/lx900e-app --port 8000" ]; then
     bad "service generator without a device (got \"$line\")"
 fi

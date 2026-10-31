@@ -73,7 +73,19 @@ the unit is installed without `--device` and the service discovers the printer
 when it starts.  Package builds (`DESTDIR` set) never probe.
 
 Add `ipp://localhost:8000/ipp/print/LX900e` as a network printer in CUPS 3, or
-open `http://localhost:8000/` to use the web interface.  Without `--device` the
+open `http://localhost:8000/` to use the web interface.
+
+If another printer application already listens on port 8000, choose a free
+port at install time:
+
+```
+sudo make install-pappl PORT=8001
+```
+
+Then add `ipp://localhost:8001/ipp/print/LX900e`. Do not run two PAPPL
+applications on the same port: each may bind one address family and answer
+requests meant for the other, which shows up as a missing printer or
+"Rejecting Jobs" in the client.  Without `--device` the
 application discovers USB printers and lets you add one through the web
 interface.
 

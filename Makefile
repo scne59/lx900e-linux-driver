@@ -29,6 +29,8 @@ SERVICE        := $(BUILD_DIR)/lx900e-app.service
 # DEVICE_URI overrides the probe; a non-empty DESTDIR (packaging) never probes
 # because the build host's printer must not leak into the package.
 DEVICE_URI     ?=
+# The IPP port.  Change it if another printer application already uses 8000.
+PORT           ?= 8000
 
 CPPFLAGS       += -Iinclude -D_GNU_SOURCE -DLX900_APP_VERSION=\"$(VERSION)\"
 ifeq ($(PAPPL_14),yes)
@@ -80,7 +82,7 @@ $(SERVICE): pappl/lx900e-app.service.in $(APP) tools/gen-service.awk FORCE
 	else \
 	    args=; \
 	fi; \
-	awk -v bindir="$(PREFIX)/bin" -v args="$$args" \
+	awk -v bindir="$(PREFIX)/bin" -v args="$$args" -v port="$(PORT)" \
 	    -f tools/gen-service.awk $< > $@
 
 detect: $(APP)

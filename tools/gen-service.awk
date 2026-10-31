@@ -1,10 +1,10 @@
-# Substitute @BINDIR@ and @DEVICE_ARGS@ in a systemd unit template.
+# Substitute @BINDIR@, @DEVICE_ARGS@ and @PORT@ in a systemd unit template.
 #
 # This is awk rather than sed because a device URI can contain characters
 # that sed's replacement syntax treats specially (&, |, backslash); index()
 # and substr() have no such rules.
 #
-#   awk -v bindir=/usr/local/bin -v args=" --device 'usb://...'" \
+#   awk -v bindir=/usr/local/bin -v args=" --device 'usb://...'" -v port=8000 \
 #       -f tools/gen-service.awk pappl/lx900e-app.service.in
 
 function subst(s, from, to,   out, i) {
@@ -18,5 +18,6 @@ function subst(s, from, to,   out, i) {
 
 {
     line = subst($0, "@BINDIR@", bindir)
-    print subst(line, "@DEVICE_ARGS@", args)
+    line = subst(line, "@DEVICE_ARGS@", args)
+    print subst(line, "@PORT@", port)
 }
