@@ -153,7 +153,7 @@ def ipptool_job(tmp, name, filename, document_format, extra="",
             size = CAPTURE.stat().st_size
             if size > 0 and size == last_size:
                 stable += 1
-                if stable >= 5:
+                if stable >= 20:        # 2 s without growth
                     break
             else:
                 stable = 0
