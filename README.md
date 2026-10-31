@@ -73,10 +73,18 @@ For CUPS 3, or to use the printer without a PPD:
 ```
 sudo apt install libpappl-dev ghostscript
 make pappl
+make detect          # prints the URI, including the serial number
 sudo make install-pappl
 lx900e-app --device 'usb://Primera/Color_Label_900?serial=00000001' \
     --printer LX900e --port 8000 --spool "$HOME/.local/state/lx900e-app"
 ```
+
+`make detect` prints the exact URI PAPPL uses, for example
+`usb://Primera/Color_Label_900?serial=00000001`. `lx900e-app --list-devices`
+shows every USB printer and its IEEE-1284 device ID. `make install-pappl`
+runs the same probe and, if the printer is connected, writes that URI into the
+installed systemd unit; otherwise the service discovers the printer when it
+starts.
 
 Then add `ipp://localhost:8000/ipp/print/LX900e` as a network printer in CUPS 3
 or any IPP Everywhere client. The web interface is at

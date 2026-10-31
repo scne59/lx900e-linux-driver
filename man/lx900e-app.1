@@ -13,6 +13,8 @@ lx900e-app \- PAPPL printer application for the Primera LX900e label printer
 .RB [ \-\-state " file" ]
 .RB [ \-\-no-state ]
 .RB [ \-\-debug ]
+.RB [ \-\-detect ]
+.RB [ \-\-list-devices ]
 .RB [ \-\-check-device ]
 .RB [ \-\-no-tls ]
 .SH DESCRIPTION
@@ -72,6 +74,15 @@ Do not load or save printer state.
 .B \-\-debug
 Enable PAPPL debug logging.
 .TP
+.B \-\-detect
+Print the device URI of the first connected LX900e and exit.
+The URI contains the serial number, for example
+.BR usb://Primera/Color_Label_900?serial=00000001 .
+Exit status is 1 if no printer is found.
+.TP
+.B \-\-list-devices
+List every USB printer and its IEEE-1284 device ID, one per line, and exit.
+.TP
 .B \-\-check-device
 Open the
 .B \-\-device
@@ -82,6 +93,36 @@ Do not advertise or require IPPS/TLS.
 .TP
 .B \-\-help
 Show a usage summary.
+.SH DETECTING THE PRINTER
+The serial number is part of the USB device URI.  The application prints the
+exact URI PAPPL would use:
+.PP
+.nf
+    lx900e-app --detect
+    usb://Primera/Color_Label_900?serial=00000001
+.fi
+.PP
+To see every USB printer, not just the LX900e:
+.PP
+.nf
+    lx900e-app --list-devices
+.fi
+.PP
+Without PAPPL, the same information is available from the USB descriptors:
+.PP
+.nf
+    lsusb -d 0f25:0022 -v | grep -i iserial
+.fi
+.PP
+or from CUPS 2:
+.PP
+.nf
+    lpinfo -v | grep -i primera
+.fi
+.PP
+The serial distinguishes two identical printers on the same host.  A queue
+created without it still works, but it may attach to the wrong unit if both
+are connected.
 .SH PRINT OPTIONS
 .TP
 .B lx900-ink-cartridge
@@ -107,6 +148,15 @@ The environment variables
 and
 .B LX900_TOP_OFFSET
 override the file.
+.SH INSTALLATION
+.B make install-pappl
+probes USB and, if an LX900e is connected, writes its URI into the installed
+systemd unit so the service starts bound to that printer.  If no printer is
+connected the unit is installed without
+.BR \-\-device ,
+and the application discovers a printer when it starts.  A package build with
+.B DESTDIR
+never probes, so the build host's printer cannot leak into the package.
 .SH EXAMPLES
 Run in the foreground against the printer and open the web interface:
 .PP

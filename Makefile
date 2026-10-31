@@ -24,6 +24,12 @@ BUILD_DIR      := build
 APP            := $(BUILD_DIR)/lx900e-app
 SERVICE        := $(BUILD_DIR)/lx900e-app.service
 
+# `make pappl` probes USB and bakes the URI (including the serial number) of a
+# connected printer into the systemd unit, so the service starts bound to it.
+# DEVICE_URI overrides the probe; a non-empty DESTDIR (packaging) never probes
+# because the build host's printer must not leak into the package.
+DEVICE_URI     ?=
+
 CPPFLAGS       += -Iinclude -D_GNU_SOURCE -DLX900_APP_VERSION=\"$(VERSION)\"
 ifeq ($(PAPPL_14),yes)
 CPPFLAGS       += -DHAVE_PAPPL_CREATE_PRINTERS
@@ -43,7 +49,7 @@ else
 CPPFLAGS       += -DHAVE_LIBUSB $(LIBUSB_CFLAGS)
 endif
 
-.PHONY: all driver pappl test install install-pappl uninstall clean help FORCE
+.PHONY: all driver pappl detect test install install-pappl uninstall clean help FORCE
 
 all: driver pappl
 
@@ -59,9 +65,27 @@ $(APP): pappl/lx900-app.c src/lx900_encoder.c src/lx900_status.c \
 		-o $@ pappl/lx900-app.c src/lx900_encoder.c src/lx900_status.c \
 		$(PAPPL_LIBS) $(CUPS_LIBS) $(LIBUSB_LIBS) -lm
 
-$(SERVICE): pappl/lx900e-app.service.in FORCE
+$(SERVICE): pappl/lx900e-app.service.in $(APP) tools/gen-service.awk FORCE
 	@mkdir -p $(dir $@)
-	sed 's|@BINDIR@|$(PREFIX)/bin|g' $< > $@
+	@if [ -n "$(DEVICE_URI)" ]; then \
+	    dev='$(DEVICE_URI)'; \
+	elif [ -z "$(DESTDIR)" ]; then \
+	    dev=$$($(APP) --detect 2>/dev/null | head -n 1); \
+	else \
+	    dev=; \
+	fi; \
+	if [ -n "$$dev" ]; then \
+	    args=" --device '$$dev' --printer LX900e"; \
+	    echo "  binding printer: $$dev"; \
+	else \
+	    args=; \
+	fi; \
+	awk -v bindir="$(PREFIX)/bin" -v args="$$args" \
+	    -f tools/gen-service.awk $< > $@
+
+detect: $(APP)
+	@$(APP) --detect || { \
+	    echo "no LX900e found on USB; connect it and try again" >&2; exit 1; }
 
 test:
 	tests/run.sh
@@ -78,6 +102,9 @@ install-pappl: pappl
 	install -D -m 0644 $(SERVICE) \
 		$(DESTDIR)$(SYSTEMD_UNIT_DIR)/lx900e-app.service
 	install -D -m 0644 pappl/lx900.css $(DESTDIR)$(APPDATA_DIR)/style.css
+	@if [ -z "$(DESTDIR)" ]; then \
+	    echo "installed; run 'systemctl daemon-reload && systemctl enable --now lx900e-app'"; \
+	fi
 
 uninstall:
 	-$(MAKE) -C driver uninstall
@@ -94,6 +121,7 @@ help:
 	@echo "make            build the CUPS 2 filter, PPD and the printer application"
 	@echo "make driver     build only the CUPS 2 filter and PPD"
 	@echo "make pappl      build only the CUPS 3 printer application"
+	@echo "make detect     print the USB URI and serial number of a connected printer"
 	@echo "make test       run the printer-free test suites"
 	@echo "make install    install everything (PREFIX=$(PREFIX))"
 	@echo "make install-pappl  install only the printer application"

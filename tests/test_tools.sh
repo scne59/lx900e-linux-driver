@@ -64,6 +64,24 @@ expect_fail "purge rejects an unknown ink" tools/lx900-purge.sh -i purple --dry-
 expect_fail "purge rejects a non-numeric count" tools/lx900-purge.sh -n many --dry-run
 expect_fail "installer rejects an unknown option" ./install.sh --frobnicate
 
+# ---------------------------------------------------------------- unit generation
+
+# The device URI can contain & or |, which sed would treat specially.  The
+# generator uses index()/substr() so the URI survives unchanged.
+line=$(printf '@BINDIR@/lx900e-app@DEVICE_ARGS@ --port 8000\n' |
+    awk -v bindir=/usr/bin \
+        -v args=" --device 'usb://Primera/Color_Label_900?serial=a&b'" \
+        -f tools/gen-service.awk)
+if [ "$line" != "/usr/bin/lx900e-app --device 'usb://Primera/Color_Label_900?serial=a&b' --port 8000" ]; then
+    bad "service generator (got \"$line\")"
+fi
+
+line=$(printf '@BINDIR@/lx900e-app@DEVICE_ARGS@ --port 8000\n' |
+    awk -v bindir=/usr/bin -v args="" -f tools/gen-service.awk)
+if [ "$line" != "/usr/bin/lx900e-app --port 8000" ]; then
+    bad "service generator without a device (got \"$line\")"
+fi
+
 # ---------------------------------------------------------------- offline run
 
 if [ -x build/colortest ]; then

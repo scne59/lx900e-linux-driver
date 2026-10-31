@@ -187,6 +187,30 @@ def captured():
     return S.Stream(data), data
 
 
+def check_detection():
+    """The URI printer, with and without a printer attached."""
+    result = subprocess.run([APP, "--list-devices"], stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    for line in lines:
+        assert "\t" in line, line
+        uri, device_id = line.split("\t", 1)
+        assert uri.startswith("usb://"), line
+
+    found = [line.split("\t", 1)[0] for line in lines
+             if "Color_Label_900" in line]
+    detected = subprocess.run([APP, "--detect"], stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE, text=True, check=False)
+    if found:
+        assert detected.returncode == 0, detected.stderr
+        assert detected.stdout.strip() == found[0], (detected.stdout, found)
+        assert "serial=" in detected.stdout, detected.stdout
+    else:
+        assert detected.returncode != 0, detected.stdout
+        assert "no LX900e" in detected.stderr, detected.stderr
+
+
 def check_startup_banner():
     text = OUT.read_text(errors="replace")
     assert "ipp://localhost:%d/ipp/print/LX900e" % PORT in text, text
@@ -354,6 +378,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix="lx900e-pappl-") as tmpname:
         tmp = pathlib.Path(tmpname)
         try:
+            check_detection()
+            if VERBOSE:
+                print("ok   device detection")
             start_app(tmp)
             check_startup_banner()
             if VERBOSE:

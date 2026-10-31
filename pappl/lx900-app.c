@@ -830,6 +830,54 @@ static const char *autoadd_cb(const char *device_info, const char *device_uri,
     return NULL;
 }
 
+/* ------------------------------------------------------------------ */
+/* Device discovery                                                    */
+/* ------------------------------------------------------------------ */
+
+typedef struct {
+    char uri[1024];
+    int  found;
+} detect_state_t;
+
+static bool list_device_cb(const char *device_info, const char *device_uri,
+                           const char *device_id, void *data)
+{
+    (void)device_info;
+    (void)data;
+
+    printf("%s\t%s\n", device_uri, device_id ? device_id : "");
+    return false;
+}
+
+static bool detect_device_cb(const char *device_info, const char *device_uri,
+                             const char *device_id, void *data)
+{
+    detect_state_t *state = data;
+
+    if (autoadd_cb(device_info, device_uri, device_id, NULL) == NULL)
+        return false;
+
+    papplCopyString(state->uri, device_uri, sizeof(state->uri));
+    state->found = 1;
+    return true;                        /* stop at the first match */
+}
+
+/*
+ * Find the first connected LX900e and return the device URI PAPPL would use,
+ * including the serial number.  Returns 0 on success, -1 if none is found.
+ */
+static int detect_device(char *uri, size_t urisize)
+{
+    detect_state_t state;
+
+    memset(&state, 0, sizeof(state));
+    papplDeviceList(PAPPL_DEVTYPE_USB, detect_device_cb, &state, NULL, NULL);
+    if (!state.found)
+        return -1;
+    papplCopyString(uri, state.uri, urisize);
+    return 0;
+}
+
 #ifndef HAVE_PAPPL_CREATE_PRINTERS
 /*
  * PAPPL 1.3 has no papplSystemCreatePrinters().  Enumerate USB printers and
@@ -981,6 +1029,8 @@ static void usage(FILE *stream)
             "  --state FILE       State file (default: SPOOL/state)\n"
             "  --no-state         Do not load or save printer state\n"
             "  --debug            Enable PAPPL debug logging\n"
+            "  --detect           Print the URI of a connected LX900e and exit\n"
+            "  --list-devices     List every USB printer as URI<TAB>device-id\n"
             "  --check-device     Open the --device URI, report success, and exit\n"
             "  --no-tls           Do not advertise or require IPPS/TLS\n"
             "  --help             Show this help\n\n"
@@ -1004,6 +1054,8 @@ int main(int argc, char **argv)
     bool no_state = false;
     bool check_device = false;
     bool no_tls = false;
+    bool detect = false;
+    bool list_devices = false;
     pappl_loglevel_t loglevel = PAPPL_LOGLEVEL_INFO;
     int port = 8000;
     int i;
@@ -1030,6 +1082,10 @@ int main(int argc, char **argv)
             no_state = true;
         } else if (strcmp(argv[i], "--debug") == 0) {
             loglevel = PAPPL_LOGLEVEL_DEBUG;
+        } else if (strcmp(argv[i], "--detect") == 0) {
+            detect = true;
+        } else if (strcmp(argv[i], "--list-devices") == 0) {
+            list_devices = true;
         } else if (strcmp(argv[i], "--check-device") == 0) {
             check_device = true;
         } else if (strcmp(argv[i], "--no-tls") == 0) {
@@ -1039,6 +1095,22 @@ int main(int argc, char **argv)
             usage(stderr);
             return 1;
         }
+    }
+
+    if (list_devices) {
+        papplDeviceList(PAPPL_DEVTYPE_USB, list_device_cb, NULL, NULL, NULL);
+        return 0;
+    }
+
+    if (detect) {
+        char uri[1024];
+
+        if (detect_device(uri, sizeof(uri)) < 0) {
+            fprintf(stderr, "lx900e-app: no LX900e found on USB\n");
+            return 1;
+        }
+        printf("%s\n", uri);
+        return 0;
     }
 
     if (spool_dir == NULL) {

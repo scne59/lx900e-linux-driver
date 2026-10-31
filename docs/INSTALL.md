@@ -59,10 +59,18 @@ PAPPL application instead:
 ```
 sudo apt install libpappl-dev ghostscript
 make pappl
+make detect          # prints the URI, including the serial number
 sudo make install-pappl
 lx900e-app --device 'usb://Primera/Color_Label_900?serial=00000001' \
     --printer LX900e --port 8000 --spool "$HOME/.local/state/lx900e-app"
 ```
+
+`make detect` asks PAPPL for the connected printers and prints the URI of the
+first LX900e, including its serial number.  `lx900e-app --list-devices` lists
+all USB printers.  `make install-pappl` runs the probe itself: if the printer
+is connected, the installed systemd unit is bound to that URI; if it is not,
+the unit is installed without `--device` and the service discovers the printer
+when it starts.  Package builds (`DESTDIR` set) never probe.
 
 Add `ipp://localhost:8000/ipp/print/LX900e` as a network printer in CUPS 3, or
 open `http://localhost:8000/` to use the web interface.  Without `--device` the
