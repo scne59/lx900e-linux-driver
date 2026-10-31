@@ -208,9 +208,33 @@ typedef struct {
     unsigned         pages;
 } lx900_raster_job_t;
 
+/*
+ * CUPS's usb backend hands the printer at most 8192 bytes per bulk transfer.
+ * PAPPL passes the encoder's writes straight through, and a 21900-byte frame
+ * transfer is more than this printer's firmware handles: it acknowledges the
+ * start of the job and then stops responding.  Keep the same chunk size as
+ * the known-good backend.
+ */
+#define USB_CHUNK 8192
+
 static ssize_t device_write_cb(void *context, const void *data, size_t length)
 {
-    return papplDeviceWrite((pappl_device_t *)context, data, length);
+    pappl_device_t *device = (pappl_device_t *)context;
+    const unsigned char *p = data;
+    size_t total = 0;
+
+    while (total < length) {
+        size_t n = length - total;
+        ssize_t written;
+
+        if (n > USB_CHUNK)
+            n = USB_CHUNK;
+        written = papplDeviceWrite(device, p + total, n);
+        if (written <= 0)
+            return total > 0 ? (ssize_t)total : written;
+        total += (size_t)written;
+    }
+    return (ssize_t)total;
 }
 
 static void device_error_cb(const char *message, void *data)
